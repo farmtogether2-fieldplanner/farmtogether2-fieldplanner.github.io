@@ -1,5 +1,5 @@
 # Farm Planner Pro - Field Layout Tool for Farm Together 2
-[Launch Project](farmtogether2-fieldplanner.github.io)
+[Launch Project](https://farmtogether2-fieldplanner.github.io)
 ## Overview
 
 Farm Planner Pro is a specialized web-based tool designed for Farm Together 2 players to plan and organize their farm layouts. This interactive planner allows you to create detailed farm designs before implementing them in-game, helping you optimize space usage and visualize your farm's appearance.
