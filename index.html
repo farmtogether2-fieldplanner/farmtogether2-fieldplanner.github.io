@@ -1,4 +1,4 @@
-<!-- Field Planner App v1.3 - Hash: 3c84fb19e76d5c8f1b64342fa12c8b0c -->
+<!-- Field Planner App v1.4 - Hash: 8e649c213fb798d5ba0731f4ec6a2e5d -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,10 +16,25 @@
         #setup-container {
             max-width: 800px;
             margin: 0 auto;
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.9);
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .background-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
         }
         
         #planner-container {
@@ -137,6 +152,25 @@
         
         .btn-load:hover {
             background-color: #e68a00;
+        }
+        
+        .btn-danger {
+            background-color: #f44336;
+        }
+        
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+        
+        .btn-return {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #607d8b;
+        }
+        
+        .btn-return:hover {
+            background-color: #455a64;
         }
         
         input, select {
@@ -328,11 +362,24 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .app-title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .return-container {
+            position: relative;
+        }
     </style>
 </head>
 <body>
+    <div class="background-wrapper"></div>
+    
     <div id="setup-container">
-        <h1>Field Planner Pro</h1>
+        <h1 class="app-title">Field Planner Pro</h1>
         <div class="input-group">
             <label>Set grid dimensions:</label>
             <div class="input-row">
@@ -356,7 +403,9 @@
         </div>
     </div>
     
-    <div id="planner-container">
+    <div id="planner-container" class="return-container">
+        <button id="return-btn" class="btn-return">Return to Start</button>
+        
         <div class="flex-container">
             <div id="products-panel">
                 <h2>Products</h2>
@@ -422,7 +471,7 @@
         </div>
         
         <div class="version-info">
-            Field Planner Pro v1.3 | Hash: 3c84fb19e76d5c8f1b64342fa12c8b0c
+            Field Planner Pro v1.4 | Hash: 8e649c213fb798d5ba0731f4ec6a2e5d
         </div>
     </div>
     
@@ -449,10 +498,8 @@
         let currentZoom = 1;
         let cellSize = 20; // Base cell size before zooming
         let products = [
-            { name: "Apples", color: "#ff0000" },
-            { name: "Corn", color: "#ffff00" },
-            { name: "Trees", color: "#008000" }
-        ];
+            { name: "Road", color: "#808080" },
+          ];
         
         // DOM elements
         const setupContainer = document.getElementById('setup-container');
@@ -460,6 +507,7 @@
         const gridWidthInput = document.getElementById('grid-width');
         const gridHeightInput = document.getElementById('grid-height');
         const startBtn = document.getElementById('start-btn');
+        const returnBtn = document.getElementById('return-btn');
         const gridViewport = document.getElementById('grid-viewport');
         const grid = document.getElementById('grid');
         const productList = document.getElementById('product-list');
@@ -488,6 +536,8 @@
         
         // Event Listeners
         startBtn.addEventListener('click', initializePlanner);
+        returnBtn.addEventListener('click', returnToStart);
+        
         toolSelector.addEventListener('change', (e) => {
             currentTool = e.target.value;
             updateSelectionTools();
@@ -549,7 +599,33 @@
         window.addEventListener('load', () => {
             updateSavedPlansList();
             updateSavedPlansListInitial();
+            
+            // Check if background.jpg exists
+            checkBackgroundImage();
         });
+        
+        // Check if background image exists
+        function checkBackgroundImage() {
+            const img = new Image();
+            img.onload = function() {
+                // Image exists, do nothing (background will be shown)
+            };
+            img.onerror = function() {
+                // Image doesn't exist, remove the background wrapper
+                console.warn('background.jpg not found. Using default background.');
+                document.querySelector('.background-wrapper').style.display = 'none';
+            };
+            img.src = 'background.jpg';
+        }
+        
+        // Return to start screen
+        function returnToStart() {
+            if (confirm('Return to start screen? Any unsaved changes will be lost.')) {
+                setupContainer.style.display = 'block';
+                plannerContainer.style.display = 'none';
+                updateSavedPlansListInitial();
+            }
+        }
         
         // Initialize the planner
         function initializePlanner() {
@@ -559,7 +635,7 @@
             // Validate dimensions
             if (isNaN(gridWidth) || gridWidth < 5 || gridWidth > 300 ||
                 isNaN(gridHeight) || gridHeight < 5 || gridHeight > 300) {
-                alert("Please enter grid dimensions between 5 and 300");
+                alert("Maximum Grid Size in Farm Together 2 is 280 x 140 tiles");
                 return;
             }
             
@@ -854,7 +930,8 @@
                 // Store the selection bounds for later use
                 grid.dataset.selectionMinRow = minRow;
                 grid.dataset.selectionMaxRow = maxRow;
-                grid.dataset.selectionMinCol = minCol;
+                            // Update selection as mouse moves (continued)
+                            grid.dataset.selectionMinCol = minCol;
                 grid.dataset.selectionMaxCol = maxCol;
                 
                 // Just show corner cells and a few intermediate cells
@@ -915,8 +992,7 @@
                 
                 selectedCells = [];
                 
-                              // End selection process (continued)
-                              for (let r = minRow; r <= maxRow; r++) {
+                for (let r = minRow; r <= maxRow; r++) {
                     for (let c = minCol; c <= maxCol; c++) {
                         // Find the cell at this position
                         const cell = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`);
@@ -1481,6 +1557,48 @@
             });
         }
         
+        // Add export/import functionality
+        function addExportImportButtons() {
+            // Create export all button
+            const exportAllBtn = document.createElement('button');
+            exportAllBtn.textContent = 'Export All Plans';
+            exportAllBtn.className = 'btn-save';
+            exportAllBtn.style.marginTop = '10px';
+            exportAllBtn.addEventListener('click', exportAllPlans);
+            
+            // Create import button
+            const importBtn = document.createElement('button');
+            importBtn.textContent = 'Import Plan';
+            importBtn.className = 'btn-load';
+            importBtn.style.marginTop = '10px';
+            importBtn.style.marginLeft = '10px';
+            
+            // Create hidden file input
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    importPlan(e.target.files[0]);
+                }
+            });
+            
+            importBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // Add to the saved plans section
+            const exportImportContainer = document.createElement('div');
+            exportImportContainer.style.display = 'flex';
+            exportImportContainer.style.justifyContent = 'space-between';
+            exportImportContainer.appendChild(exportAllBtn);
+            exportImportContainer.appendChild(importBtn);
+            exportImportContainer.appendChild(fileInput);
+            
+            document.getElementById('saved-plans').appendChild(exportImportContainer);
+        }
+        
         // Import plan from file
         function importPlan(file) {
             const reader = new FileReader();
@@ -1570,7 +1688,7 @@
             
             // Create export object with app version and plans
             const exportData = {
-                appVersion: 'Field Planner Pro v1.3',
+                appVersion: 'Field Planner Pro v1.4',
                 exportDate: new Date().toISOString(),
                 plans: savedPlans
             };
@@ -1592,48 +1710,6 @@
             
             // Clean up
             URL.revokeObjectURL(url);
-        }
-        
-        // Add export/import functionality
-        function addExportImportButtons() {
-            // Create export all button
-            const exportAllBtn = document.createElement('button');
-            exportAllBtn.textContent = 'Export All Plans';
-            exportAllBtn.className = 'btn-save';
-            exportAllBtn.style.marginTop = '10px';
-            exportAllBtn.addEventListener('click', exportAllPlans);
-            
-            // Create import button
-            const importBtn = document.createElement('button');
-            importBtn.textContent = 'Import Plan';
-            importBtn.className = 'btn-load';
-            importBtn.style.marginTop = '10px';
-            importBtn.style.marginLeft = '10px';
-            
-            // Create hidden file input
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '.json';
-            fileInput.style.display = 'none';
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    importPlan(e.target.files[0]);
-                }
-            });
-            
-            importBtn.addEventListener('click', () => {
-                fileInput.click();
-            });
-            
-            // Add to the saved plans section
-            const exportImportContainer = document.createElement('div');
-            exportImportContainer.style.display = 'flex';
-            exportImportContainer.style.justifyContent = 'space-between';
-            exportImportContainer.appendChild(exportAllBtn);
-            exportImportContainer.appendChild(importBtn);
-            exportImportContainer.appendChild(fileInput);
-            
-            document.getElementById('saved-plans').appendChild(exportImportContainer);
         }
         
         // Auto-save functionality
