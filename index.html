@@ -1,0 +1,1658 @@
+<!-- Field Planner App v1.3 - Hash: 3c84fb19e76d5c8f1b64342fa12c8b0c -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Planner Pro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        #setup-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        #planner-container {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .flex-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        #products-panel {
+            width: 250px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        #grid-container {
+            flex-grow: 1;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .product-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .product-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .color-square {
+            width: 25px;
+            height: 25px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+        }
+        
+        #grid-viewport {
+            overflow: auto;
+            flex-grow: 1;
+            position: relative;
+            max-height: calc(100vh - 250px);
+            border: 1px solid #ddd;
+        }
+        
+        #grid {
+            display: grid;
+            gap: 1px;
+            background-color: #ddd;
+            transform-origin: top left;
+        }
+        
+        .grid-cell {
+            background-color: white;
+            border: 1px solid #eee;
+            transition: background-color 0.2s;
+            min-width: 5px; /* Minimum size when zoomed out */
+            min-height: 5px;
+        }
+        
+        .grid-cell:hover {
+            opacity: 0.8;
+        }
+        
+        .toolbar {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-save {
+            background-color: #2196F3;
+        }
+        
+        .btn-save:hover {
+            background-color: #0b7dda;
+        }
+        
+        .btn-load {
+            background-color: #ff9800;
+        }
+        
+        .btn-load:hover {
+            background-color: #e68a00;
+        }
+        
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .info-text {
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .locked-cell {
+            position: relative;
+        }
+        
+        .locked-cell::after {
+            content: "🔒";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+        }
+        
+        #legend {
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        
+        #product-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        #selection-info {
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .input-row input {
+            flex: 1;
+        }
+        
+        .version-info {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 30px;
+        }
+        
+        #saved-plans {
+            margin-top: 15px;
+        }
+        
+        #saved-plans ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        #saved-plans li {
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #saved-plans li:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .plan-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+        }
+        
+        .modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .modal-close:hover {
+            color: black;
+        }
+        
+        #save-modal input {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        #zoom-controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            gap: 10px;
+        }
+        
+        .zoom-btn {
+            background-color: #607d8b;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .zoom-btn:hover {
+            background-color: #455a64;
+        }
+        
+        #zoom-level {
+            display: inline-block;
+            padding: 8px 12px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255,255,255,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="setup-container">
+        <h1>Field Planner Pro</h1>
+        <div class="input-group">
+            <label>Set grid dimensions:</label>
+            <div class="input-row">
+                <div>
+                    <label for="grid-width">Width (pixels):</label>
+                    <input type="number" id="grid-width" min="5" max="300" value="50">
+                </div>
+                <div>
+                    <label for="grid-height">Height (pixels):</label>
+                    <input type="number" id="grid-height" min="5" max="300" value="50">
+                </div>
+            </div>
+            <p class="info-text">Enter values between 5 and 300 (supports large grids like 280×140)</p>
+        </div>
+        <button id="start-btn">Start Planning</button>
+        
+        <!-- Load saved plans from initial screen -->
+        <div id="saved-plans-initial">
+            <h3>Or load a saved plan:</h3>
+            <ul id="saved-plans-list-initial"></ul>
+        </div>
+    </div>
+    
+    <div id="planner-container">
+        <div class="flex-container">
+            <div id="products-panel">
+                <h2>Products</h2>
+                <div id="product-list"></div>
+                
+                <div id="product-form">
+                    <h3>Add New Product</h3>
+                    <div>
+                        <label for="product-name">Product Name:</label>
+                        <input type="text" id="product-name" placeholder="e.g., Apples">
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <label for="product-color">Color:</label>
+                        <input type="color" id="product-color">
+                    </div>
+                    <button id="add-product-btn" style="margin-top: 10px;">Add Product</button>
+                </div>
+                
+                <div id="legend">
+                    <h3>Legend</h3>
+                    <div id="legend-items"></div>
+                </div>
+                
+                <div id="saved-plans">
+                    <h3>Saved Plans</h3>
+                    <ul id="saved-plans-list"></ul>
+                </div>
+            </div>
+            
+            <div id="grid-container">
+                <div class="toolbar">
+                    <select id="tool-selector">
+                        <option value="paint">Paint</option>
+                        <option value="erase">Erase</option>
+                        <option value="select">Select</option>
+                    </select>
+                    
+                    <button id="lock-btn" disabled>Lock Selection</button>
+                    <button id="unlock-btn" disabled>Unlock All</button>
+                    <button id="clear-btn">Clear All</button>
+                    
+                    <button id="save-btn" class="btn-save">Save Plan</button>
+                    <button id="load-btn" class="btn-load">Load Plan</button>
+                </div>
+                
+                <div id="grid-info">
+                    <p>Grid size: <span id="grid-size-display"></span></p>
+                </div>
+                
+                <div id="selection-info"></div>
+                
+                <div id="grid-viewport">
+                    <div id="grid"></div>
+                </div>
+                
+                <div id="zoom-controls">
+                    <button id="zoom-out-btn" class="zoom-btn">−</button>
+                    <span id="zoom-level">100%</span>
+                    <button id="zoom-in-btn" class="zoom-btn">+</button>
+                    <button id="zoom-reset-btn">Reset Zoom</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="version-info">
+            Field Planner Pro v1.3 | Hash: 3c84fb19e76d5c8f1b64342fa12c8b0c
+        </div>
+    </div>
+    
+    <!-- Save Modal -->
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h3>Save Your Plan</h3>
+            <label for="plan-name">Plan Name:</label>
+            <input type="text" id="plan-name" placeholder="My Field Plan">
+            <button id="confirm-save-btn">Save</button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentProduct = null;
+        let currentTool = 'paint';
+        let selectedCells = [];
+        let isSelecting = false;
+        let startCell = null;
+        let gridWidth = 50;
+        let gridHeight = 50;
+        let currentZoom = 1;
+        let cellSize = 20; // Base cell size before zooming
+        let products = [
+            { name: "Apples", color: "#ff0000" },
+            { name: "Corn", color: "#ffff00" },
+            { name: "Trees", color: "#008000" }
+        ];
+        
+        // DOM elements
+        const setupContainer = document.getElementById('setup-container');
+        const plannerContainer = document.getElementById('planner-container');
+        const gridWidthInput = document.getElementById('grid-width');
+        const gridHeightInput = document.getElementById('grid-height');
+        const startBtn = document.getElementById('start-btn');
+        const gridViewport = document.getElementById('grid-viewport');
+        const grid = document.getElementById('grid');
+        const productList = document.getElementById('product-list');
+        const legendItems = document.getElementById('legend-items');
+        const toolSelector = document.getElementById('tool-selector');
+        const lockBtn = document.getElementById('lock-btn');
+        const unlockBtn = document.getElementById('unlock-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const addProductBtn = document.getElementById('add-product-btn');
+        const productNameInput = document.getElementById('product-name');
+        const productColorInput = document.getElementById('product-color');
+        const selectionInfo = document.getElementById('selection-info');
+        const gridSizeDisplay = document.getElementById('grid-size-display');
+        const saveBtn = document.getElementById('save-btn');
+        const loadBtn = document.getElementById('load-btn');
+        const saveModal = document.getElementById('save-modal');
+        const modalClose = document.querySelector('.modal-close');
+        const planNameInput = document.getElementById('plan-name');
+        const confirmSaveBtn = document.getElementById('confirm-save-btn');
+        const savedPlansList = document.getElementById('saved-plans-list');
+        const savedPlansListInitial = document.getElementById('saved-plans-list-initial');
+        const zoomInBtn = document.getElementById('zoom-in-btn');
+        const zoomOutBtn = document.getElementById('zoom-out-btn');
+        const zoomResetBtn = document.getElementById('zoom-reset-btn');
+        const zoomLevelDisplay = document.getElementById('zoom-level');
+        
+        // Event Listeners
+        startBtn.addEventListener('click', initializePlanner);
+        toolSelector.addEventListener('change', (e) => {
+            currentTool = e.target.value;
+            updateSelectionTools();
+        });
+        
+        lockBtn.addEventListener('click', lockSelectedCells);
+        unlockBtn.addEventListener('click', unlockAllCells);
+        clearBtn.addEventListener('click', clearGrid);
+        addProductBtn.addEventListener('click', addNewProduct);
+        saveBtn.addEventListener('click', () => {
+            saveModal.style.display = 'block';
+        });
+        loadBtn.addEventListener('click', () => {
+            updateSavedPlansList();
+        });
+        
+        modalClose.addEventListener('click', () => {
+            saveModal.style.display = 'none';
+        });
+        
+        confirmSaveBtn.addEventListener('click', () => {
+            const planName = planNameInput.value.trim() || 'Unnamed Plan';
+            savePlan(planName);
+            saveModal.style.display = 'none';
+            planNameInput.value = '';
+            updateSavedPlansList();
+        });
+        
+        // Close modal if clicking outside of it
+        window.addEventListener('click', (e) => {
+            if (e.target === saveModal) {
+                saveModal.style.display = 'none';
+            }
+        });
+        
+        // Zoom controls
+        zoomInBtn.addEventListener('click', () => {
+            zoomGrid(currentZoom + 0.1);
+        });
+        
+        zoomOutBtn.addEventListener('click', () => {
+            zoomGrid(Math.max(0.1, currentZoom - 0.1));
+        });
+        
+        zoomResetBtn.addEventListener('click', () => {
+            zoomGrid(1);
+        });
+        
+        // Mouse wheel zoom
+        gridViewport.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) { // Only zoom when Ctrl/Cmd is pressed
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                zoomGrid(Math.max(0.1, Math.min(3, currentZoom + delta)));
+            }
+        });
+        
+        // Load saved plans on startup
+        window.addEventListener('load', () => {
+            updateSavedPlansList();
+            updateSavedPlansListInitial();
+        });
+        
+        // Initialize the planner
+        function initializePlanner() {
+            gridWidth = parseInt(gridWidthInput.value);
+            gridHeight = parseInt(gridHeightInput.value);
+            
+            // Validate dimensions
+            if (isNaN(gridWidth) || gridWidth < 5 || gridWidth > 300 ||
+                isNaN(gridHeight) || gridHeight < 5 || gridHeight > 300) {
+                alert("Please enter grid dimensions between 5 and 300");
+                return;
+            }
+            
+            // Hide setup, show planner
+            setupContainer.style.display = 'none';
+            plannerContainer.style.display = 'block';
+            
+            // Update grid size display
+            gridSizeDisplay.textContent = `${gridWidth} × ${gridHeight}`;
+            
+            // Show loading indicator for large grids
+            if (gridWidth * gridHeight > 10000) {
+                showLoadingOverlay();
+            }
+            
+            // Create grid with slight delay to allow loading indicator to appear
+            setTimeout(() => {
+                createGrid(gridWidth, gridHeight);
+                hideLoadingOverlay();
+                
+                // Populate product list
+                updateProductList();
+                
+                // Reset zoom
+                zoomGrid(1);
+            }, 50);
+        }
+        
+        // Create the grid based on specified width and height
+        function createGrid(width, height) {
+            grid.innerHTML = '';
+            grid.style.gridTemplateColumns = `repeat(${width}, ${cellSize}px)`;
+            grid.style.gridTemplateRows = `repeat(${height}, ${cellSize}px)`;
+            
+            // For very large grids, use a more efficient approach
+            const isLargeGrid = width * height > 10000;
+            
+            if (isLargeGrid) {
+                // Use document fragment for better performance
+                const fragment = document.createDocumentFragment();
+                
+                for (let row = 0; row < height; row++) {
+                    for (let col = 0; col < width; col++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('grid-cell');
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        cell.dataset.index = row * width + col;
+                        
+                        // Add the cell to the fragment
+                        fragment.appendChild(cell);
+                    }
+                }
+                
+                // Add all cells to the grid at once
+                grid.appendChild(fragment);
+                
+                // Add event delegation to the grid instead of individual cells
+                grid.addEventListener('mousedown', handleGridMouseDown);
+                grid.addEventListener('mousemove', handleGridMouseMove);
+                document.addEventListener('mouseup', handleGridMouseUp);
+                
+            } else {
+                // For smaller grids, use the regular approach with individual event listeners
+                for (let row = 0; row < height; row++) {
+                    for (let col = 0; col < width; col++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('grid-cell');
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        cell.dataset.index = row * width + col;
+                        
+                        // Mouse events for painting and selection
+                        cell.addEventListener('mousedown', (e) => {
+                            if (currentTool === 'select') {
+                                startSelection(cell);
+                            } else {
+                                applyCellAction(cell);
+                            }
+                        });
+                        
+                        cell.addEventListener('mouseenter', (e) => {
+                            if (isSelecting && currentTool === 'select') {
+                                updateSelection(cell);
+                            } else if (e.buttons === 1) { // Left mouse button is pressed
+                                applyCellAction(cell);
+                            }
+                        });
+                        
+                        grid.appendChild(cell);
+                    }
+                }
+                
+                // Add mouseup event listener to the document
+                document.addEventListener('mouseup', () => {
+                    if (isSelecting && currentTool === 'select') {
+                        endSelection();
+                    }
+                });
+            }
+        }
+        
+        // Event handlers for large grid event delegation
+        function handleGridMouseDown(e) {
+            const cell = e.target.closest('.grid-cell');
+            if (!cell) return;
+            
+            if (currentTool === 'select') {
+                startSelection(cell);
+            } else {
+                applyCellAction(cell);
+            }
+        }
+        
+        function handleGridMouseMove(e) {
+            const cell = e.target.closest('.grid-cell');
+            if (!cell) return;
+            
+            if (isSelecting && currentTool === 'select') {
+                updateSelection(cell);
+            } else if (e.buttons === 1) { // Left mouse button is pressed
+                applyCellAction(cell);
+            }
+        }
+        
+        function handleGridMouseUp() {
+            if (isSelecting && currentTool === 'select') {
+                endSelection();
+            }
+        }
+        
+        // Apply zoom to the grid
+        function zoomGrid(zoom) {
+            currentZoom = zoom;
+            grid.style.transform = `scale(${zoom})`;
+            
+            // Update zoom level display
+            zoomLevelDisplay.textContent = `${Math.round(zoom * 100)}%`;
+            
+            // Disable zoom in button if at max zoom
+            zoomInBtn.disabled = zoom >= 3;
+            
+            // Disable zoom out button if at min zoom
+            zoomOutBtn.disabled = zoom <= 0.1;
+        }
+        
+        // Show loading overlay for large operations
+        function showLoadingOverlay() {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.id = 'loading-overlay';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            
+            const text = document.createElement('div');
+            text.textContent = 'Creating grid...';
+            text.style.marginLeft = '15px';
+            
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            container.appendChild(spinner);
+            container.appendChild(text);
+            
+            overlay.appendChild(container);
+            gridViewport.appendChild(overlay);
+        }
+        
+        // Hide loading overlay
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        // Update the product list in the sidebar
+        function updateProductList() {
+            productList.innerHTML = '';
+            legendItems.innerHTML = '';
+            
+            products.forEach(product => {
+                // Create product item
+                const item = document.createElement('div');
+                item.classList.add('product-item');
+                
+                const colorSquare = document.createElement('div');
+                colorSquare.classList.add('color-square');
+                colorSquare.style.backgroundColor = product.color;
+                
+                const name = document.createElement('span');
+                name.textContent = product.name;
+                
+                item.appendChild(colorSquare);
+                item.appendChild(name);
+                
+                item.addEventListener('click', (e) => selectProduct(product, e));
+                
+                productList.appendChild(item);
+                
+                // Create legend item
+                const legendItem = document.createElement('div');
+                legendItem.style.display = 'flex';
+                legendItem.style.alignItems = 'center';
+                legendItem.style.marginBottom = '5px';
+                
+                const legendColor = document.createElement('div');
+                legendColor.style.width = '15px';
+                legendColor.style.height = '15px';
+                legendColor.style.backgroundColor = product.color;
+                legendColor.style.marginRight = '5px';
+                legendColor.style.border = '1px solid #ccc';
+                
+                const legendName = document.createElement('span');
+                legendName.textContent = product.name;
+                legendName.style.fontSize = '0.9rem';
+                
+                legendItem.appendChild(legendColor);
+                legendItem.appendChild(legendName);
+                
+                legendItems.appendChild(legendItem);
+            });
+        }
+        
+        // Select a product to use
+        function selectProduct(product, event) {
+            currentProduct = product;
+            
+            // Highlight the selected product
+            const productItems = document.querySelectorAll('.product-item');
+            productItems.forEach(item => {
+                item.style.backgroundColor = '';
+            });
+            
+            event.currentTarget.style.backgroundColor = '#e0e0e0';
+        }
+        
+        // Apply action (paint or erase) to a cell
+        function applyCellAction(cell) {
+            if (cell.classList.contains('locked-cell')) {
+                return; // Can't modify locked cells
+            }
+            
+            if (currentTool === 'paint') {
+                if (currentProduct) {
+                    cell.style.backgroundColor = currentProduct.color;
+                    cell.dataset.product = currentProduct.name;
+                }
+            } else if (currentTool === 'erase') {
+                cell.style.backgroundColor = '';
+                delete cell.dataset.product;
+            }
+        }
+        
+        // Start selection process
+        function startSelection(cell) {
+            if (!isSelecting) {
+                isSelecting = true;
+                startCell = cell;
+                selectedCells = [cell];
+                cell.style.outline = '2px solid blue';
+            }
+        }
+        
+        // Update selection as mouse moves
+        function updateSelection(currentCell) {
+            // Due to performance concerns for large grids, we don't clear all cells
+            // Instead, we'll just track the selection rectangle and render it
+            
+            // Calculate the selection rectangle
+            const startRow = parseInt(startCell.dataset.row);
+            const startCol = parseInt(startCell.dataset.col);
+            const currentRow = parseInt(currentCell.dataset.row);
+            const currentCol = parseInt(currentCell.dataset.col);
+            
+            const minRow = Math.min(startRow, currentRow);
+            const maxRow = Math.max(startRow, currentRow);
+            const minCol = Math.min(startCol, currentCol);
+            const maxCol = Math.max(startCol, currentCol);
+            
+            // For large grids, use a more efficient selection approach
+            const isLargeSelection = (maxRow - minRow + 1) * (maxCol - minCol + 1) > 1000;
+            
+            if (isLargeSelection) {
+                // Just outline the cells at the edges of the selection
+                const oldSelected = Array.from(document.querySelectorAll('.grid-cell[style*="outline"]'));
+                oldSelected.forEach(cell => {
+                    cell.style.outline = '';
+                });
+                
+                // Store the selection bounds for later use
+                grid.dataset.selectionMinRow = minRow;
+                grid.dataset.selectionMaxRow = maxRow;
+                grid.dataset.selectionMinCol = minCol;
+                grid.dataset.selectionMaxCol = maxCol;
+                
+                // Just show corner cells and a few intermediate cells
+                const cornerCells = [
+                    `.grid-cell[data-row="${minRow}"][data-col="${minCol}"]`,
+                    `.grid-cell[data-row="${minRow}"][data-col="${maxCol}"]`,
+                    `.grid-cell[data-row="${maxRow}"][data-col="${minCol}"]`,
+                    `.grid-cell[data-row="${maxRow}"][data-col="${maxCol}"]`
+                ];
+                
+                cornerCells.forEach(selector => {
+                    const cell = document.querySelector(selector);
+                    if (cell) {
+                        cell.style.outline = '2px solid blue';
+                    }
+                });
+                
+                // Show selection size
+                const selectionSize = (maxRow - minRow + 1) * (maxCol - minCol + 1);
+                selectionInfo.textContent = `Selected: ${selectionSize} cells (large selection)`;
+                
+            } else {
+                // Clear previous selection outlines
+                const oldSelected = Array.from(document.querySelectorAll('.grid-cell[style*="outline"]'));
+                oldSelected.forEach(cell => {
+                    cell.style.outline = '';
+                });
+                
+                selectedCells = [];
+                
+                // Highlight all cells in the selection rectangle
+                for (let r = minRow; r <= maxRow; r++) {
+                    for (let c = minCol; c <= maxCol; c++) {
+                        // Find the cell at this position
+                        const cell = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`);
+                        if (cell) {
+                            cell.style.outline = '2px solid blue';
+                            selectedCells.push(cell);
+                        }
+                    }
+                }
+                
+                // Update selection info
+                updateSelectionInfo();
+            }
+        }
+        
+        // End selection process
+        function endSelection() {
+            isSelecting = false;
+            
+            // For large selections, we need to collect all cells in the selection now
+            if (grid.dataset.selectionMinRow) {
+                const minRow = parseInt(grid.dataset.selectionMinRow);
+                const maxRow = parseInt(grid.dataset.selectionMaxRow);
+                const minCol = parseInt(grid.dataset.selectionMinCol);
+                const maxCol = parseInt(grid.dataset.selectionMaxCol);
+                
+                selectedCells = [];
+                
+                              // End selection process (continued)
+                              for (let r = minRow; r <= maxRow; r++) {
+                    for (let c = minCol; c <= maxCol; c++) {
+                        // Find the cell at this position
+                        const cell = document.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`);
+                        if (cell) {
+                            selectedCells.push(cell);
+                        }
+                    }
+                }
+                
+                // Clear the selection bounds from the grid dataset
+                delete grid.dataset.selectionMinRow;
+                delete grid.dataset.selectionMaxRow;
+                delete grid.dataset.selectionMinCol;
+                delete grid.dataset.selectionMaxCol;
+                
+                // Update selection info
+                updateSelectionInfo();
+            }
+            
+            updateSelectionTools();
+        }
+        
+        // Lock selected cells
+        function lockSelectedCells() {
+            // For large selections, use a more efficient approach
+            if (selectedCells.length > 1000) {
+                // Show loading indicator
+                showLoadingOverlay();
+                
+                // Process in chunks to avoid browser freeze
+                const chunkSize = 500;
+                let processed = 0;
+                
+                function processChunk() {
+                    const chunk = selectedCells.slice(processed, processed + chunkSize);
+                    chunk.forEach(cell => {
+                        cell.classList.add('locked-cell');
+                        cell.style.outline = '';
+                    });
+                    
+                    processed += chunk.length;
+                    
+                    if (processed < selectedCells.length) {
+                        setTimeout(processChunk, 0); // Continue with next chunk
+                    } else {
+                        // Finished all cells
+                        selectedCells = [];
+                        updateSelectionTools();
+                        hideLoadingOverlay();
+                    }
+                }
+                
+                // Start processing
+                setTimeout(processChunk, 0);
+            } else {
+                // For smaller selections, use the direct approach
+                selectedCells.forEach(cell => {
+                    cell.classList.add('locked-cell');
+                    cell.style.outline = '';
+                });
+                
+                // Clear selection after locking
+                clearSelection();
+            }
+        }
+        
+        // Unlock all cells
+        function unlockAllCells() {
+            const lockedCells = document.querySelectorAll('.locked-cell');
+            
+            // For large grids with many locked cells, use a more efficient approach
+            if (lockedCells.length > 1000) {
+                // Show loading indicator
+                showLoadingOverlay();
+                
+                // Process in chunks to avoid browser freeze
+                const chunkSize = 500;
+                const cellsArray = Array.from(lockedCells);
+                let processed = 0;
+                
+                function processChunk() {
+                    const chunk = cellsArray.slice(processed, processed + chunkSize);
+                    chunk.forEach(cell => {
+                        cell.classList.remove('locked-cell');
+                    });
+                    
+                    processed += chunk.length;
+                    
+                    if (processed < cellsArray.length) {
+                        setTimeout(processChunk, 0); // Continue with next chunk
+                    } else {
+                        // Finished all cells
+                        hideLoadingOverlay();
+                        unlockBtn.disabled = true;
+                    }
+                }
+                
+                // Start processing
+                setTimeout(processChunk, 0);
+            } else {
+                // For smaller grids, use the direct approach
+                lockedCells.forEach(cell => {
+                    cell.classList.remove('locked-cell');
+                });
+                unlockBtn.disabled = true;
+            }
+        }
+        
+        // Clear the entire grid
+        function clearGrid() {
+            if (confirm('Are you sure you want to clear the entire grid?')) {
+                const cells = document.querySelectorAll('.grid-cell');
+                
+                // For large grids, use a more efficient approach
+                if (cells.length > 10000) {
+                    // Show loading indicator
+                    showLoadingOverlay();
+                    
+                    // Process in chunks to avoid browser freeze
+                    const chunkSize = 1000;
+                    const cellsArray = Array.from(cells);
+                    let processed = 0;
+                    
+                    function processChunk() {
+                        const chunk = cellsArray.slice(processed, processed + chunkSize);
+                        chunk.forEach(cell => {
+                            cell.style.backgroundColor = '';
+                            cell.classList.remove('locked-cell');
+                            delete cell.dataset.product;
+                            cell.style.outline = '';
+                        });
+                        
+                        processed += chunk.length;
+                        
+                        if (processed < cellsArray.length) {
+                            setTimeout(processChunk, 0); // Continue with next chunk
+                        } else {
+                            // Finished all cells
+                            selectedCells = [];
+                            updateSelectionTools();
+                            hideLoadingOverlay();
+                        }
+                    }
+                    
+                    // Start processing
+                    setTimeout(processChunk, 0);
+                } else {
+                    // For smaller grids, use the direct approach
+                    cells.forEach(cell => {
+                        cell.style.backgroundColor = '';
+                        cell.classList.remove('locked-cell');
+                        delete cell.dataset.product;
+                        cell.style.outline = '';
+                    });
+                    
+                    clearSelection();
+                }
+            }
+        }
+        
+        // Clear current selection
+        function clearSelection() {
+            selectedCells.forEach(cell => {
+                cell.style.outline = '';
+            });
+            selectedCells = [];
+            updateSelectionTools();
+            selectionInfo.textContent = '';
+        }
+        
+        // Update selection tools based on current state
+        function updateSelectionTools() {
+            if (currentTool === 'select' && selectedCells.length > 0) {
+                lockBtn.disabled = false;
+            } else {
+                lockBtn.disabled = true;
+            }
+            
+            // Check if there are any locked cells
+            const lockedCells = document.querySelectorAll('.locked-cell');
+            unlockBtn.disabled = lockedCells.length === 0;
+        }
+        
+        // Add a new product
+        function addNewProduct() {
+            const name = productNameInput.value.trim();
+            const color = productColorInput.value;
+            
+            if (name === '') {
+                alert('Please enter a product name');
+                return;
+            }
+            
+            // Check for duplicate names
+            if (products.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                alert('A product with this name already exists');
+                return;
+            }
+            
+            // Add the new product
+            products.push({ name, color });
+            
+            // Update the UI
+            updateProductList();
+            
+            // Clear inputs
+            productNameInput.value = '';
+        }
+        
+        // Update selection information
+        function updateSelectionInfo() {
+            if (selectedCells.length > 0) {
+                // For very large selections, use simplified info
+                if (selectedCells.length > 5000) {
+                    selectionInfo.textContent = `Selected: ${selectedCells.length} cells (large selection)`;
+                    return;
+                }
+                
+                const counts = {};
+                let emptyCount = 0;
+                
+                selectedCells.forEach(cell => {
+                    const product = cell.dataset.product;
+                    if (product) {
+                        counts[product] = (counts[product] || 0) + 1;
+                    } else {
+                        emptyCount++;
+                    }
+                });
+                
+                let infoText = `Selected: ${selectedCells.length} cells (`;
+                
+                if (emptyCount > 0) {
+                    infoText += `Empty: ${emptyCount}, `;
+                }
+                
+                for (const [product, count] of Object.entries(counts)) {
+                    infoText += `${product}: ${count}, `;
+                }
+                
+                // Remove trailing comma and space if needed
+                if (infoText.endsWith(', ')) {
+                    infoText = infoText.slice(0, -2);
+                }
+                infoText += ')';
+                
+                selectionInfo.textContent = infoText;
+            } else {
+                selectionInfo.textContent = '';
+            }
+        }
+        
+        // Save the current plan
+        function savePlan(name) {
+            // Show loading for large grids
+            if (gridWidth * gridHeight > 10000) {
+                showLoadingOverlay();
+            }
+            
+            // Use setTimeout to allow the loading overlay to appear
+            setTimeout(() => {
+                try {
+                    // Capture current grid state
+                    const gridData = [];
+                    const cells = document.querySelectorAll('.grid-cell');
+                    
+                    cells.forEach(cell => {
+                        // Only save cells that have data (to reduce storage size)
+                        if (cell.style.backgroundColor || cell.classList.contains('locked-cell')) {
+                            gridData.push({
+                                row: parseInt(cell.dataset.row),
+                                col: parseInt(cell.dataset.col),
+                                product: cell.dataset.product || null,
+                                color: cell.style.backgroundColor || null,
+                                locked: cell.classList.contains('locked-cell')
+                            });
+                        }
+                    });
+                    
+                    // Create plan object
+                    const plan = {
+                        name: name,
+                        date: new Date().toISOString(),
+                        width: gridWidth,
+                        height: gridHeight,
+                        products: products,
+                        gridData: gridData,
+                        // Store a compressed version for large grids
+                        isCompressed: gridWidth * gridHeight > 10000
+                    };
+                    
+                    // Get existing plans or initialize empty array
+                    const savedPlans = JSON.parse(localStorage.getItem('fieldPlans') || '[]');
+                    
+                    // Check if plan with same name exists
+                    const existingPlanIndex = savedPlans.findIndex(p => p.name === name);
+                    if (existingPlanIndex !== -1) {
+                        // If it exists, update it
+                        savedPlans[existingPlanIndex] = plan;
+                    } else {
+                        // Otherwise add new plan
+                        savedPlans.push(plan);
+                    }
+                    
+                    // Save to localStorage
+                    localStorage.setItem('fieldPlans', JSON.stringify(savedPlans));
+                    
+                    alert(`Plan "${name}" saved successfully!`);
+                    
+                    // Hide loading overlay if showing
+                    hideLoadingOverlay();
+                    
+                } catch (error) {
+                    console.error('Error saving plan:', error);
+                    alert(`Error saving plan: ${error.message}`);
+                    hideLoadingOverlay();
+                }
+            }, 50);
+        }
+        
+        // Load a plan
+        function loadPlan(planName) {
+            const savedPlans = JSON.parse(localStorage.getItem('fieldPlans') || '[]');
+            const plan = savedPlans.find(p => p.name === planName);
+            
+            if (!plan) {
+                alert('Could not find the selected plan.');
+                return;
+            }
+            
+            // Confirm if current work should be discarded
+            if (!confirm('Loading a plan will replace your current work. Continue?')) {
+                return;
+            }
+            
+            // Show loading indicator for large plans
+            if (plan.width * plan.height > 10000) {
+                showLoadingOverlay();
+            }
+            
+            // Use setTimeout to allow the loading overlay to appear
+            setTimeout(() => {
+                try {
+                    // Update global variables
+                    gridWidth = plan.width;
+                    gridHeight = plan.height;
+                    products = plan.products;
+                    
+                    // Update grid size display
+                    gridSizeDisplay.textContent = `${gridWidth} × ${gridHeight}`;
+                    
+                    // Create a new grid
+                    createGrid(gridWidth, gridHeight);
+                    
+                    // Reset zoom
+                    zoomGrid(1);
+                    
+                    // For large grids, process the cell updates in chunks
+                    if (plan.gridData.length > 5000) {
+                        const chunkSize = 1000;
+                        let processed = 0;
+                        
+                        function processChunk() {
+                            const chunk = plan.gridData.slice(processed, processed + chunkSize);
+                            
+                            chunk.forEach(cellData => {
+                                const cell = document.querySelector(`.grid-cell[data-row="${cellData.row}"][data-col="${cellData.col}"]`);
+                                if (cell) {
+                                    // Restore product
+                                    if (cellData.product) {
+                                        cell.dataset.product = cellData.product;
+                                    }
+                                    
+                                    // Restore color
+                                    cell.style.backgroundColor = cellData.color || '';
+                                    
+                                    // Restore lock state
+                                    if (cellData.locked) {
+                                        cell.classList.add('locked-cell');
+                                    }
+                                }
+                            });
+                            
+                            processed += chunk.length;
+                            
+                            if (processed < plan.gridData.length) {
+                                setTimeout(processChunk, 0);
+                            } else {
+                                // Finish loading
+                                finishLoading();
+                            }
+                        }
+                        
+                        // Start processing the first chunk
+                        processChunk();
+                    } else {
+                        // For smaller plans, update the cells directly
+                        plan.gridData.forEach(cellData => {
+                            const cell = document.querySelector(`.grid-cell[data-row="${cellData.row}"][data-col="${cellData.col}"]`);
+                            if (cell) {
+                                // Restore product
+                                if (cellData.product) {
+                                    cell.dataset.product = cellData.product;
+                                }
+                                
+                                // Restore color
+                                cell.style.backgroundColor = cellData.color || '';
+                                
+                                // Restore lock state
+                                if (cellData.locked) {
+                                    cell.classList.add('locked-cell');
+                                }
+                            }
+                        });
+                        
+                        finishLoading();
+                    }
+                    
+                    function finishLoading() {
+                        // Update product list with loaded products
+                        updateProductList();
+                        
+                        // Update UI based on locked cells
+                        const lockedCells = document.querySelectorAll('.locked-cell');
+                        unlockBtn.disabled = lockedCells.length === 0;
+                        
+                        // Hide loading overlay
+                        hideLoadingOverlay();
+                        
+                        alert(`Plan "${planName}" loaded successfully!`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading plan:', error);
+                    alert(`Error loading plan: ${error.message}`);
+                    hideLoadingOverlay();
+                }
+            }, 50);
+        }
+        
+        // Delete a plan
+        function deletePlan(planName) {
+            if (!confirm(`Are you sure you want to delete the plan "${planName}"?`)) {
+                return;
+            }
+            
+            const savedPlans = JSON.parse(localStorage.getItem('fieldPlans') || '[]');
+            const filteredPlans = savedPlans.filter(p => p.name !== planName);
+            
+            localStorage.setItem('fieldPlans', JSON.stringify(filteredPlans));
+            
+            updateSavedPlansList();
+            updateSavedPlansListInitial();
+            
+            alert(`Plan "${planName}" deleted successfully.`);
+        }
+        
+        // Update saved plans list in sidebar
+        function updateSavedPlansList() {
+            const savedPlans = JSON.parse(localStorage.getItem('fieldPlans') || '[]');
+            
+            // Sort by most recent first
+            savedPlans.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Update the list in the sidebar
+            savedPlansList.innerHTML = '';
+            
+            if (savedPlans.length === 0) {
+                const noPlans = document.createElement('p');
+                noPlans.textContent = 'No saved plans yet.';
+                savedPlansList.appendChild(noPlans);
+                return;
+            }
+            
+            savedPlans.forEach(plan => {
+                const item = document.createElement('li');
+                
+                const planInfo = document.createElement('div');
+                planInfo.textContent = plan.name;
+                
+                const planSize = document.createElement('small');
+                planSize.textContent = `${plan.width}×${plan.height}`;
+                planSize.style.display = 'block';
+                planInfo.appendChild(planSize);
+                
+                const planDate = document.createElement('small');
+                planDate.textContent = new Date(plan.date).toLocaleDateString();
+                planDate.style.display = 'block';
+                planDate.style.color = '#666';
+                planInfo.appendChild(planDate);
+                
+                const actions = document.createElement('div');
+                actions.className = 'plan-actions';
+                
+                const loadButton = document.createElement('button');
+                loadButton.textContent = 'Load';
+                loadButton.className = 'btn-small';
+                loadButton.addEventListener('click', () => loadPlan(plan.name));
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.className = 'btn-small';
+                deleteButton.style.backgroundColor = '#f44336';
+                deleteButton.addEventListener('click', () => deletePlan(plan.name));
+                
+                actions.appendChild(loadButton);
+                actions.appendChild(deleteButton);
+                
+                item.appendChild(planInfo);
+                item.appendChild(actions);
+                savedPlansList.appendChild(item);
+            });
+        }
+        
+        // Update saved plans list on initial screen
+        function updateSavedPlansListInitial() {
+            const savedPlans = JSON.parse(localStorage.getItem('fieldPlans') || '[]');
+            
+            // Sort by most recent first
+            savedPlans.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Update the list in the initial screen
+            savedPlansListInitial.innerHTML = '';
+            
+            if (savedPlans.length === 0) {
+                const noPlans = document.createElement('p');
+                noPlans.textContent = 'No saved plans yet.';
+                savedPlansListInitial.appendChild(noPlans);
+                return;
+            }
+            
+            savedPlans.forEach(plan => {
+                const item = document.createElement('li');
+                
+                const planInfo = document.createElement('span');
+                planInfo.textContent = `${plan.name} (${plan.width}×${plan.height})`;
+                
+                const planDate = document.createElement('small');
+                planDate.textContent = ` - ${new Date(plan.date).toLocaleDateString()}`;
+                planDate.style.color = '#666';
+                planInfo.appendChild(planDate);
+                
+                const loadButton = document.createElement('button');
+                loadButton.textContent = 'Load';
+                loadButton.className = 'btn-small btn-load';
+                loadButton.style.marginLeft = '10px';
+                loadButton.addEventListener('click', () => {
+                    // Set dimensions inputs to match the plan
+                    gridWidthInput.value = plan.width;
+                    gridHeightInput.value = plan.height;
+                    
+                    // Initialize planner
+                    initializePlanner();
+                    
+                    // Then load the plan data
+                    loadPlan(plan.name);
+                });
+                
+                item.appendChild(planInfo);
+                item.appendChild(loadButton);
+                savedPlansListInitial.appendChild(item);
+            });
+        }
+        
+        // Import plan from file
+        function importPlan(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    let plansToImport = [];
+                    
+                    // Determine if this is a single plan or a collection of plans
+                    if (importedData.plans && Array.isArray(importedData.plans)) {
+                        // This is an export of multiple plans
+                        plansToImport = importedData.plans;
+                    } else if (importedData.name && importedData.width && importedData.height && importedData.products && importedData.gridData) {
+                        // This is a single plan
+                        plansToImport = [importedData];
+                    } else {
+                        throw new Error('Invalid plan file format');
+                    }
+                    
+                    // Validate each plan
+                    for (const plan of plansToImport) {
+                        if (!plan.name || !plan.width || !plan.height || !plan.products || !plan.gridData) {
+                            throw new Error('One or more plans have invalid format');
+                        }
+                    }
+                    
+                    // Get existing plans
+                    const savedPlans = JSON.parse(localStorage.getItem('fieldPlans') || '[]');
+                    let importCount = 0;
+                    let overwriteCount = 0;
+                    
+                    // Process each plan to import
+                    for (const plan of plansToImport) {
+                        // Check if plan with same name exists
+                        const existingPlanIndex = savedPlans.findIndex(p => p.name === plan.name);
+                        
+                        if (existingPlanIndex !== -1) {
+                            // Ask for confirmation to overwrite once for all plans
+                            if (overwriteCount === 0 && !confirm(`One or more plans already exist. Do you want to overwrite existing plans?`)) {
+                                // If user doesn't want to overwrite, add a suffix to make names unique
+                                plan.name = `${plan.name} (Imported ${new Date().toLocaleDateString()})`;
+                                savedPlans.push(plan);
+                                importCount++;
+                            } else {
+                                // Overwrite the plan
+                                savedPlans[existingPlanIndex] = plan;
+                                overwriteCount++;
+                            }
+                        } else {
+                            // Add the new plan
+                            savedPlans.push(plan);
+                            importCount++;
+                        }
+                    }
+                    
+                    // Save to localStorage
+                    localStorage.setItem('fieldPlans', JSON.stringify(savedPlans));
+                    
+                    // Update the UI
+                    updateSavedPlansList();
+                    updateSavedPlansListInitial();
+                    
+                    // Show success message
+                    if (plansToImport.length === 1) {
+                        alert(`Plan "${plansToImport[0].name}" imported successfully!`);
+                    } else {
+                        alert(`${importCount + overwriteCount} plans imported successfully! (${importCount} new, ${overwriteCount} overwritten)`);
+                    }
+                } catch (error) {
+                    console.error('Import error:', error);
+                    alert(`Error importing plan: ${error.message}`);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Export all plans to a single file
+        function exportAllPlans() {
+            const savedPlans = JSON.parse(localStorage.getItem('fieldPlans') || '[]');
+            
+            if (savedPlans.length === 0) {
+                alert('No plans to export.');
+                return;
+            }
+            
+            // Create export object with app version and plans
+            const exportData = {
+                appVersion: 'Field Planner Pro v1.3',
+                exportDate: new Date().toISOString(),
+                plans: savedPlans
+            };
+            
+            // Convert to a JSON string
+            const dataJson = JSON.stringify(exportData, null, 2);
+            
+            // Create a downloadable blob
+            const blob = new Blob([dataJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create a download link and click it
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = `field-planner-export-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            
+            // Clean up
+            URL.revokeObjectURL(url);
+        }
+        
+        // Add export/import functionality
+        function addExportImportButtons() {
+            // Create export all button
+            const exportAllBtn = document.createElement('button');
+            exportAllBtn.textContent = 'Export All Plans';
+            exportAllBtn.className = 'btn-save';
+            exportAllBtn.style.marginTop = '10px';
+            exportAllBtn.addEventListener('click', exportAllPlans);
+            
+            // Create import button
+            const importBtn = document.createElement('button');
+            importBtn.textContent = 'Import Plan';
+            importBtn.className = 'btn-load';
+            importBtn.style.marginTop = '10px';
+            importBtn.style.marginLeft = '10px';
+            
+            // Create hidden file input
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    importPlan(e.target.files[0]);
+                }
+            });
+            
+            importBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // Add to the saved plans section
+            const exportImportContainer = document.createElement('div');
+            exportImportContainer.style.display = 'flex';
+            exportImportContainer.style.justifyContent = 'space-between';
+            exportImportContainer.appendChild(exportAllBtn);
+            exportImportContainer.appendChild(importBtn);
+            exportImportContainer.appendChild(fileInput);
+            
+            document.getElementById('saved-plans').appendChild(exportImportContainer);
+        }
+        
+        // Auto-save functionality
+        function setupAutoSave() {
+            // Save current state every 2 minutes
+            setInterval(() => {
+                if (plannerContainer.style.display === 'block') { // Only if planner is active
+                    savePlan('AutoSave');
+                    console.log('Auto-saved plan at', new Date().toLocaleTimeString());
+                    // No UI notification to avoid disruption
+                }
+            }, 2 * 60 * 1000); // 2 minutes
+        }
+        
+        // Add export/import buttons after the page loads
+        window.addEventListener('load', () => {
+            addExportImportButtons();
+            setupAutoSave();
+        });
+    </script>
+</body>
+</html>
